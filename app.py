@@ -1,8 +1,17 @@
 import streamlit as st
 import time
 from datetime import datetime
-from litgpt.api import LLM
 import json
+import sys
+
+# Try importing litgpt with error handling
+try:
+    from litgpt.api import LLM
+    LITGPT_AVAILABLE = True
+except ImportError as e:
+    LITGPT_AVAILABLE = False
+    st.error(f"❌ Failed to import litgpt: {e}")
+    st.stop()
 
 # Page configuration
 st.set_page_config(
@@ -197,7 +206,10 @@ with st.sidebar:
         st.rerun()
 
 # Main content area
-st.markdown('<div class="main-header">💡 LitGPT Advanced Chat</div>', unsafe_allow_html=True)
+try:
+    st.markdown('<div class="main-header">💡 LitGPT Advanced Chat</div>', unsafe_allow_html=True)
+except Exception as e:
+    st.error(f"Error rendering header: {e}")
 
 # Model loading
 @st.cache_resource
@@ -208,7 +220,9 @@ def load_model(model_name):
         llm.distribute()
         return llm, None
     except Exception as e:
-        return None, str(e)
+        import traceback
+        error_msg = f"{str(e)}\n\n{traceback.format_exc()}"
+        return None, error_msg
 
 # Lazy model loading - only load when needed
 # Don't load on startup to avoid timeouts on Streamlit Cloud
@@ -229,25 +243,31 @@ else:
     st.warning("⚠️ **Note:** On Streamlit Cloud, model loading may take 2-5 minutes on first use due to limited resources.")
 
 # Display model info
-if st.session_state.llm_instance:
-    with st.expander("ℹ️ Model Information", expanded=False):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Model", selected_model.split("/")[-1])
-        with col2:
-            # Calculate parameters from the model
-            try:
-                if hasattr(st.session_state.llm_instance, 'model'):
-                    total_params = sum(p.numel() for p in st.session_state.llm_instance.model.parameters())
-                    param_str = f"{total_params / 1e9:.2f}B" if total_params >= 1e9 else f"{total_params / 1e6:.2f}M"
-                    st.metric("Parameters", param_str)
-                else:
+try:
+    if st.session_state.llm_instance:
+        with st.expander("ℹ️ Model Information", expanded=False):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Model", selected_model.split("/")[-1])
+            with col2:
+                # Calculate parameters from the model
+                try:
+                    if hasattr(st.session_state.llm_instance, 'model'):
+                        total_params = sum(p.numel() for p in st.session_state.llm_instance.model.parameters())
+                        param_str = f"{total_params / 1e9:.2f}B" if total_params >= 1e9 else f"{total_params / 1e6:.2f}M"
+                        st.metric("Parameters", param_str)
+                    else:
+                        st.metric("Parameters", "N/A")
+                except Exception as e:
                     st.metric("Parameters", "N/A")
-            except Exception:
-                st.metric("Parameters", "N/A")
-        with col3:
-            device = "CUDA" if hasattr(st.session_state.llm_instance, 'fabric') and st.session_state.llm_instance.fabric else "CPU"
-            st.metric("Device", device)
+            with col3:
+                try:
+                    device = "CUDA" if hasattr(st.session_state.llm_instance, 'fabric') and st.session_state.llm_instance.fabric else "CPU"
+                    st.metric("Device", device)
+                except Exception:
+                    st.metric("Device", "Unknown")
+except Exception as e:
+    st.warning(f"Could not display model info: {e}")
 
 # Quick actions
 st.subheader("⚡ Quick Actions")
