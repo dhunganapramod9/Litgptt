@@ -1,4 +1,5 @@
-# 💡 LitGPT Advanced Chat : https://dhunganapramod9-litgptt-app-ngzujr.streamlit.app/
+# 💡 LitGPT Advanced Chat 
+Project link: https://dhunganapramod9-litgptt-app-ngzujr.streamlit.app/
 
 An advanced, feature-rich Streamlit application for interacting with Large Language Models using LitGPT. This application provides a modern chat interface with streaming responses, conversation history, and extensive customization options.
 
