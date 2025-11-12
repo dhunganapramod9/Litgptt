@@ -205,27 +205,24 @@ CUDA out of memory
 - Reduce max_tokens
 - Disable streaming
 
-## 📝 License
+## License
 
 This project uses LitGPT, which is licensed under the Apache License 2.0.
 
-## 🤝 Contributing
+##  Contributing
 
 Feel free to submit issues, fork the repository, and create pull requests for any improvements.
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - [LitGPT](https://github.com/Lightning-AI/litgpt) - Lightning AI's GPT implementation
 - [Streamlit](https://streamlit.io/) - The web framework
 - [PyTorch](https://pytorch.org/) - Deep learning framework
 
-## 📧 Support
+## Support
 
 For issues related to:
 - **LitGPT**: Check the [LitGPT documentation](https://github.com/Lightning-AI/litgpt)
 - **This Application**: Open an issue in the repository
 
----
-
-**Made with ❤️ using LitGPT and Streamlit**
 
