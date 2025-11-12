@@ -211,13 +211,21 @@ try:
 except Exception as e:
     st.error(f"Error rendering header: {e}")
 
-# Model loading
-@st.cache_resource
+# Model loading - completely lazy, only called when user sends message
 def load_model(model_name):
-    """Load and cache the model"""
+    """Load and cache the model - only called on demand"""
     try:
+        # Use session state to cache instead of @st.cache_resource to avoid startup issues
+        cache_key = f"model_{model_name}"
+        if cache_key in st.session_state and st.session_state[cache_key] is not None:
+            return st.session_state[cache_key], None
+        
+        # Actually load the model
         llm = LLM.load(model_name)
         llm.distribute()
+        
+        # Cache in session state
+        st.session_state[cache_key] = llm
         return llm, None
     except Exception as e:
         import traceback
@@ -384,22 +392,34 @@ if prompt:
         full_response = ""
         
         try:
-            # Load model if not already loaded
+            # Load model if not already loaded - ONLY when user sends message
             if not st.session_state.model_loaded or st.session_state.current_model != selected_model:
-                message_placeholder.info(f"🔄 Loading {selected_model.split('/')[-1]}... This may take 2-5 minutes on first use. Please wait...")
-                llm, error = load_model(selected_model)
-                if error:
-                    message_placeholder.error(f"❌ Error loading model: {error}")
-                    st.info("💡 **Tip:** The model may need to be downloaded first. On Streamlit Cloud, this happens automatically but can take time.")
+                with message_placeholder.container():
+                    st.info(f"🔄 Loading {selected_model.split('/')[-1]}...")
+                    st.caption("This may take 2-5 minutes on first use. Please be patient...")
+                
+                try:
+                    llm, error = load_model(selected_model)
+                    if error:
+                        message_placeholder.error(f"❌ Error loading model: {str(error)[:500]}")
+                        st.warning("💡 **Tip:** Streamlit Cloud has limited resources. Model loading may fail due to memory constraints.")
+                        st.info("Consider using Hugging Face Spaces for better resource availability.")
+                        st.stop()
+                    else:
+                        st.session_state.llm_instance = llm
+                        st.session_state.model_loaded = True
+                        st.session_state.current_model = selected_model
+                        message_placeholder.empty()
+                except MemoryError:
+                    message_placeholder.error("❌ Out of memory! Streamlit Cloud doesn't have enough resources for this model.")
+                    st.warning("💡 **Solution:** Deploy to Hugging Face Spaces or use a smaller model.")
                     st.stop()
-                else:
-                    st.session_state.llm_instance = llm
-                    st.session_state.model_loaded = True
-                    st.session_state.current_model = selected_model
-                    message_placeholder.empty()
+                except Exception as e:
+                    message_placeholder.error(f"❌ Unexpected error: {str(e)[:500]}")
+                    st.stop()
             
             if not st.session_state.llm_instance:
-                message_placeholder.error("❌ Model failed to load. Please try again.")
+                message_placeholder.error("❌ Model failed to load. Please try again or use a different model.")
                 st.stop()
             
             start_time = time.time()
