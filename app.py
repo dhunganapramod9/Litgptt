@@ -55,7 +55,7 @@ if "messages" not in st.session_state:
 if "model_loaded" not in st.session_state:
     st.session_state.model_loaded = False
 if "current_model" not in st.session_state:
-    st.session_state.current_model = None
+    st.session_state.current_model = ""
 if "llm_instance" not in st.session_state:
     st.session_state.llm_instance = None
 if "generation_stats" not in st.session_state:
@@ -210,20 +210,23 @@ def load_model(model_name):
     except Exception as e:
         return None, str(e)
 
-# Load model if needed
-if not st.session_state.model_loaded or st.session_state.current_model != selected_model:
-    with st.spinner(f"🔄 Loading {selected_model}... This may take a while on first run."):
-        llm, error = load_model(selected_model)
-        if error:
-            st.error(f"❌ Error loading model: {error}")
-            st.info("💡 **Tip:** Download the model first using:")
-            st.code(f"litgpt download --repo_id {selected_model}", language="bash")
-            st.stop()
-        else:
-            st.session_state.llm_instance = llm
-            st.session_state.model_loaded = True
-            st.session_state.current_model = selected_model
-            st.success(f"✅ Model loaded: {selected_model}")
+# Lazy model loading - only load when needed
+# Don't load on startup to avoid timeouts on Streamlit Cloud
+if st.session_state.model_loaded and st.session_state.current_model == selected_model:
+    # Model already loaded and matches selection
+    pass
+elif st.session_state.current_model != selected_model:
+    # Model changed - reset state
+    st.session_state.model_loaded = False
+    st.session_state.llm_instance = None
+    st.session_state.current_model = selected_model
+
+# Show model status
+if st.session_state.model_loaded:
+    st.success(f"✅ Model ready: {selected_model.split('/')[-1]}")
+else:
+    st.info(f"💡 Model will load automatically when you send your first message. Selected: {selected_model.split('/')[-1]}")
+    st.warning("⚠️ **Note:** On Streamlit Cloud, model loading may take 2-5 minutes on first use due to limited resources.")
 
 # Display model info
 if st.session_state.llm_instance:
@@ -361,6 +364,24 @@ if prompt:
         full_response = ""
         
         try:
+            # Load model if not already loaded
+            if not st.session_state.model_loaded or st.session_state.current_model != selected_model:
+                message_placeholder.info(f"🔄 Loading {selected_model.split('/')[-1]}... This may take 2-5 minutes on first use. Please wait...")
+                llm, error = load_model(selected_model)
+                if error:
+                    message_placeholder.error(f"❌ Error loading model: {error}")
+                    st.info("💡 **Tip:** The model may need to be downloaded first. On Streamlit Cloud, this happens automatically but can take time.")
+                    st.stop()
+                else:
+                    st.session_state.llm_instance = llm
+                    st.session_state.model_loaded = True
+                    st.session_state.current_model = selected_model
+                    message_placeholder.empty()
+            
+            if not st.session_state.llm_instance:
+                message_placeholder.error("❌ Model failed to load. Please try again.")
+                st.stop()
+            
             start_time = time.time()
             tokens_generated = 0
             
