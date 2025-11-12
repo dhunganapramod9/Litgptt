@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Streamlit
+.streamlit/
+
+# Model checkpoints and data
+checkpoints/
+*.pth
+*.pt
+*.bin
+*.safetensors
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment variables
+.env
+.env.local
+
+# Exports
+exports/
+*.json
+!package.json
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
